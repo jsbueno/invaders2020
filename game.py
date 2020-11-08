@@ -7,7 +7,6 @@ tela = None
 TAMANHO_NAVE = 64
 
 
-
 class Objeto:
 
     cor = (255, 255, 255)
@@ -34,6 +33,10 @@ class Nave(Objeto):
             self.x -= self.largura // 2
         if teclas[pygame.K_RIGHT]:
             self.x += self.largura // 2
+
+        if teclas[pygame.K_SPACE]:
+            tiro = TiroAmigo(self.x, self.y - self.altura, self.jogo)
+
         if self.x < 0:
             self.x = 0
         elif self.x + self.largura > LARGURA:
@@ -53,13 +56,40 @@ class Inimigo(Objeto):
         self.cont += 1
 
 
+class Tiro(Objeto):
+    pass
+
+class TiroAmigo(Tiro):
+    cont = 0
+
+    def __init__(self, x, y, jogo):
+
+        super().__init__(x, y, jogo)
+
+        self.lista = self.jogo.tiros_da_nave
+        self.x += self.largura // 2 - self.largura // 8
+        self.largura = self.largura // 4
+        self.lista.append(self)
+
+    def atualiza(self):
+        if not self.cont % 2:
+            self.y -= self.altura // 2
+        if self.y <= 0:
+            self.morrer()
+        # TBD: checar se acertou inimigo
+
+    def morrer(self):
+        self.lista.remove(self)
+
+
+
 class Jogo:
 
     def __init__(self):
         self.tela = pygame.display.set_mode(TAMANHO)
+        self.pontos = 0
 
     def principal(self):
-
         self.nave = Nave(x=LARGURA // 2, y=ALTURA - TAMANHO_NAVE, jogo=self)
         self.inimigos = []
         self.tiros_da_nave = []
@@ -85,21 +115,27 @@ class Jogo:
                 #if evento.type == pygame.KEYDOWN:
                 #    atualiza(evento)
             self.nave.atualiza()
+
+
             for inimigo in self.inimigos:
                 inimigo.atualiza()
+
+            for tiro in self.tiros_da_nave:
+                tiro.atualiza()
 
             self.tela.fill((0, 0, 0))
 
             self.nave.desenha()
             for inimigo in self.inimigos:
                 inimigo.desenha()
+            for tiro in self.tiros_da_nave:
+                tiro.desenha()
 
             pygame.display.flip()
             pygame.event.pump()
             pygame.time.delay(30)
 
+
 jogo = Jogo()
-
 jogo.principal()
-
 pygame.quit()
