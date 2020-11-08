@@ -89,6 +89,7 @@ class Objeto:
 class Nave(Objeto):
     cor = (0, 255, 0)
     arquivo_imagem = "ship.png"
+    max_energia = 4
 
     def __init__(self,jogo):
         x=LARGURA // 2
@@ -97,7 +98,7 @@ class Nave(Objeto):
         self.ultimo_tiro = 0
         self.tempo_entre_tiros = 30
         self.maximo_tiros = 3
-        self.energia = 3
+        self.energia = self.max_energia
 
     def atualiza(self):
         super().atualiza()
@@ -316,14 +317,31 @@ class Jogo:
             self.inimigos.append(inimigo)
 
     def atualiza_informacoes(self):
+
+        # pontos
         texto_pontos = self.fonte.render(f"{self.pontos:05d}", False, (0, 255,0))
         self.tela.blit(texto_pontos, (LARGURA - texto_pontos.get_width(), ALTURA))
 
+        # Miniaturas com as vidas
         naves_vida = pygame.Surface((32 * self.vidas, 32))
 
         for i in range(self.vidas):
             naves_vida.blit(Nave.miniatura, (i * 32, 0))
         self.tela.blit(naves_vida, (0, ALTURA))
+
+        # Barra de energia:
+        esquerda = LARGURA // 4
+        topo = ALTURA + 8
+        largura = LARGURA // 4
+
+        energia = self.nave.energia / self.nave.max_energia
+        cor = (0, 255, 0) if energia > 0.6 else (255, 255, 0) if energia > 0.3 else (255, 0, 0)
+
+        pygame.draw.rect(self.tela, cor, (esquerda, topo, int(energia * largura), TAMANHO_TEXTO // 2))
+        pygame.draw.rect(self.tela, (255, 255, 255), (esquerda, topo, largura, TAMANHO_TEXTO // 2), width=3)
+
+
+
 
 try:
     jogo = Jogo()
