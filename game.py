@@ -337,6 +337,10 @@ class Jogo:
         texto_pontos = self.fonte.render(f"{self.pontos:05d}", False, (0, 255,0))
         self.tela.blit(texto_pontos, (LARGURA - texto_pontos.get_width(), ALTURA))
 
+        # fase
+        texto_fase = self.fonte.render(f"lv {self.fase}", False, (255, 255,255))
+        self.tela.blit(texto_fase, (int(LARGURA * 0.55), ALTURA))
+
         # Miniaturas com as vidas
         naves_vida = pygame.Surface((32 * self.vidas, 32))
 
