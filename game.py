@@ -17,12 +17,23 @@ class Objeto:
         self.largura = TAMANHO_NAVE
         self.altura = TAMANHO_NAVE
         self.jogo = jogo
+        self.lista = []
+
+    @property
+    def rect(self):
+        return pygame.Rect(self.x, self.y, self.largura, self.altura)
 
     def atualiza(self):
         pass
 
     def desenha(self):
         pygame.draw.rect(self.jogo.tela, self.cor, (self.x, self.y, self.largura, self.altura))
+
+    def acertado(self, forca):
+        self.morrer()
+
+    def morrer(self):
+        self.lista.remove(self)
 
 
 class Nave(Objeto):
@@ -47,6 +58,10 @@ class Inimigo(Objeto):
     cor = (192, 0, 0)
 
     cont = 0
+
+    def __init__(self, x, y, jogo):
+        super().__init__(x, y, jogo)
+        self.lista = jogo.inimigos
 
     def atualiza(self):
         if self.cont % 4 == 0:
@@ -76,12 +91,9 @@ class TiroAmigo(Tiro):
             self.y -= self.altura // 2
         if self.y <= 0:
             self.morrer()
-        # TBD: checar se acertou inimigo
-
-    def morrer(self):
-        self.lista.remove(self)
-
-
+        for inimigo in self.jogo.inimigos:
+            if self.rect.colliderect(inimigo.rect):
+                inimigo.acertado(1)
 
 class Jogo:
 
