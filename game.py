@@ -1,4 +1,8 @@
+from pathlib import Path
+
 import pygame
+
+MIDIAS = Path("media")
 
 TAMANHO = (800, 600)
 LARGURA, ALTURA = TAMANHO
@@ -10,6 +14,8 @@ TAMANHO_NAVE = 64
 class Objeto:
 
     cor = (255, 255, 255)
+    base_image = None
+    arquivo_imagem = "NAO EXISTE"
 
     def __init__(self, x, y, jogo):
         self.x = x
@@ -18,7 +24,21 @@ class Objeto:
         self.altura = TAMANHO_NAVE
         self.jogo = jogo
         self.lista = []
-        self.image = None
+        self.carrega_imagem()
+
+    def carrega_imagem(self):
+        if self.__class__.base_image:
+            self.image = self.__class__.base_image
+
+        caminho = MIDIAS / self.arquivo_imagem
+        if not caminho.exists():
+            self.image = None
+            return
+        print(f"Lendo do disco: {caminho}")
+        imagem = pygame.image.load(str(caminho))
+        self.image = pygame.transform.scale(imagem, (self.largura, self.altura))
+        self.image.fill(self.cor, special_flags=pygame.BLEND_ADD)
+        self.__class__.base_image = self.image
 
     @property
     def rect(self):
@@ -42,12 +62,11 @@ class Objeto:
 
 class Nave(Objeto):
     cor = (0, 255, 0)
+    arquivo_imagem = "ship.png"
 
     def __init__(self, x, y, jogo):
         super().__init__(x, y, jogo)
-        imagem = pygame.image.load("media/ship.png")
-        self.image = pygame.transform.scale(imagem, (self.largura, self.altura))
-        self.image.fill(self.cor, special_flags=pygame.BLEND_ADD)
+
 
     def atualiza(self):
         teclas = pygame.key.get_pressed()
@@ -69,6 +88,7 @@ class Inimigo(Objeto):
     cor = (192, 0, 0)
 
     cont = 0
+    arquivo_imagem = "invader01_00.png"
 
     def __init__(self, x, y, jogo):
         super().__init__(x, y, jogo)
