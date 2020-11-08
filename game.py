@@ -13,12 +13,14 @@ def inicio():
     global tela
     tela = pygame.display.set_mode(TAMANHO)
 
-def atualiza(evento):
+def atualiza():
     global x, y
-    if evento.key == pygame.K_LEFT and x > 0:
+    teclas = pygame.key.get_pressed()
+    if teclas[pygame.K_LEFT] and x > 0:
         x -= tamanho_nave // 2
-    elif evento.key == pygame.K_RIGHT and x < (LARGURA - tamanho_nave):
+    if teclas[pygame.K_RIGHT] and x < (LARGURA - tamanho_nave):
         x += tamanho_nave // 2
+
 
 def desenha():
     global x, y, tamanho_nave
@@ -34,9 +36,9 @@ def principal():
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT or evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
                 fim_de_jogo = True
-            if evento.type == pygame.KEYDOWN:
-                atualiza(evento)
-
+            #if evento.type == pygame.KEYDOWN:
+            #    atualiza(evento)
+        atualiza()
         pygame.display.flip()
         pygame.event.pump()
         pygame.time.delay(30)
