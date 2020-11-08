@@ -4,48 +4,62 @@ TAMANHO = (800, 600)
 LARGURA, ALTURA = TAMANHO
 tela = None
 
-tamanho_nave = 64
+TAMANHO_NAVE = 64
 
-x = LARGURA // 2
-y = ALTURA - tamanho_nave
-
-x_i = 0
-y_i = tamanho_nave
-cont_i = 0
 
 def inicio():
     global tela
     tela = pygame.display.set_mode(TAMANHO)
 
-def atualiza():
-    global x, y
-    teclas = pygame.key.get_pressed()
-    if teclas[pygame.K_LEFT]:
-        x -= tamanho_nave // 2
-    if teclas[pygame.K_RIGHT]:
-        x += tamanho_nave // 2
-    if x < 0:
-        x = 0
-    elif x + tamanho_nave > LARGURA:
-        x = LARGURA - tamanho_nave
 
-def desenha():
-    pygame.draw.rect(tela, (0, 255, 0), (x, y, tamanho_nave, tamanho_nave))
+class Objeto:
 
-def atualiza_i():
-    global x_i, y_i, cont_i
-    if cont_i % 4 == 0:
-        x_i += tamanho_nave // 2
-        if x_i + tamanho_nave > LARGURA:
-            x_i = 0
-    cont_i += 1
+    cor = (255, 255, 255)
 
-def desenha_i():
-    pygame.draw.rect(tela, (192, 0, 0), (x_i, y_i, tamanho_nave, tamanho_nave))
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.tamanho = TAMANHO_NAVE
+
+    def atualiza(self):
+        pass
+
+    def desenha(self):
+        pygame.draw.rect(tela, self.cor, (self.x, self.y, self.tamanho, self.tamanho))
+
+
+class Nave(Objeto):
+
+    def atualiza(self):
+        teclas = pygame.key.get_pressed()
+        if teclas[pygame.K_LEFT]:
+            self.x -= self.tamanho // 2
+        if teclas[pygame.K_RIGHT]:
+            self.x += self.tamanho // 2
+        if self.x < 0:
+            self.x = 0
+        elif self.x + self.tamanho > LARGURA:
+            self.x = LARGURA - self.tamanho
+
+class Inimigo(Objeto):
+
+    cont = 0
+
+    def atualiza(self):
+        if self.cont % 4 == 0:
+            self.x += self.tamanho // 2
+            if self.x + self.tamanho > LARGURA:
+                self.x = 0
+        self.cont += 1
+
 
 def principal():
 
+    nave = Nave(x=LARGURA // 2, y=ALTURA - TAMANHO_NAVE)
+    inimigo = Inimigo(x=0, y = TAMANHO_NAVE)
+
     fim_de_jogo = False
+
     while not fim_de_jogo:
 
         for evento in pygame.event.get():
@@ -53,11 +67,13 @@ def principal():
                 fim_de_jogo = True
             #if evento.type == pygame.KEYDOWN:
             #    atualiza(evento)
-        atualiza()
-        atualiza_i()
+        nave.atualiza()
+        inimigo.atualiza()
+
         tela.fill((0, 0, 0))
-        desenha()
-        desenha_i()
+
+        nave.desenha()
+        inimigo.desenha()
 
         pygame.display.flip()
         pygame.event.pump()
