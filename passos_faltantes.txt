@@ -1,12 +1,12 @@
 Limitar taxa de tiros [feito]
-tiros do inimigo
+tiros do inimigo [feito]
 evolucao das fases
 morte do jogador [feito]
 arranjo de inimigos na tela [feito]
 movimento de inimigos: vai descendo [feito]
 
-Acumular pontos
-Mostrar informacoes na tela
+Acumular pontos <-
+Mostrar informacoes na tela <-
 
 Transformar fases em classes com atributos para cada elemento
 

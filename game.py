@@ -8,6 +8,9 @@ MIDIAS = Path("media")
 
 TAMANHO = (800, 600)
 LARGURA, ALTURA = TAMANHO
+TAMANHO_TEXTO = 64
+ALTURA -= TAMANHO_TEXTO
+
 tela = None
 
 TAMANHO_NAVE = 64
@@ -70,7 +73,9 @@ class Objeto:
             self.jogo.tela.blit(self.image, self.rect)
 
     def acertado(self, forca):
-        self.morrer()
+        self.energia -= forca
+        if self.energia <= 0:
+            self.morrer()
 
     def morrer(self):
         try:
@@ -95,7 +100,7 @@ class Nave(Objeto):
     def atualiza(self):
         super().atualiza()
         teclas = pygame.key.get_pressed()
-        if self.cont % 4 != 0:
+        if self.cont % 2 != 0:
             return
         if teclas[pygame.K_LEFT]:
             self.x -= self.largura // 2
@@ -117,10 +122,8 @@ class Nave(Objeto):
         elif self.x + self.largura > LARGURA:
             self.x = LARGURA - self.largura
 
-    def acertado(self, forca):
-        self.energia -= forca
-        if self.energia < 0:
-            raise JogadorMorreu()
+    def morrer(self):
+        raise JogadorMorreu()
 
 
 class Inimigo(Objeto):
@@ -128,6 +131,8 @@ class Inimigo(Objeto):
     forca_do_tiro = 1
     chance_de_tiro = .01
     tempo_entre_tiros = 50
+    valor = 100
+    energia = 1
 
     arquivo_imagem = "invader01_00.png"
 
@@ -160,7 +165,6 @@ class Inimigo(Objeto):
             self.tenta_atirar()
 
     def tenta_atirar(self):
-        print("tentando atirar")
         qtd = len(self.jogo.tiros_inimigos)
         if qtd >= 3: # self.jogo.fase.max_tiros_inimigos:
             return
@@ -168,6 +172,9 @@ class Inimigo(Objeto):
                 tiro = TiroInimigo(self.x, self.y + self.altura, self.jogo, self.forca_do_tiro)
                 self.ultimo_tiro = self.cont
 
+    def morrer(self):
+        self.jogo.pontos += self.valor
+        super().morrer()
 
 
 class Tiro(Objeto):
@@ -223,14 +230,22 @@ class TiroInimigo(Tiro):
             self.morrer()
         if self.rect.colliderect(self.jogo.nave.rect):
             self.jogo.nave.acertado(self.forca)
+            self.morrer()
+
+
+
 
 class Jogo:
 
     def __init__(self):
+        pygame.init()
         self.tela = pygame.display.set_mode(TAMANHO)
+        self.fonte = pygame.font.Font(str(MIDIAS / "3270-Regular.ttf"), TAMANHO_TEXTO)
+
         self.pontos = 0
         self.fase = 0
         self.vidas = 3
+
 
     def principal(self):
         while True:
@@ -242,7 +257,7 @@ class Jogo:
                 print("Jogador morreu")
                 self.vidas -= 1
                 print(f"Vidas restantes: {self.vidas}")
-                if self.vidas > 0:
+                if self.vidas <= 0:
                     raise FimDeJogo()
             except FimDeFase:
                 self.fase += 1
@@ -252,21 +267,14 @@ class Jogo:
             if evento.type == pygame.QUIT or evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
                 raise FimDeJogo()
 
-        self.nave.atualiza()
-
-        for inimigo in self.inimigos:
-            inimigo.atualiza()
-
-        for tiro in self.tiros_da_nave + self.tiros_inimigos:
-            tiro.atualiza()
-
         self.tela.fill((0, 0, 0))
 
+        for elemento in self.inimigos + self.tiros_da_nave + self.tiros_inimigos:
+            elemento.atualiza()
+            elemento.desenha()
+        self.nave.atualiza()
         self.nave.desenha()
-        for inimigo in self.inimigos:
-            inimigo.desenha()
-        for tiro in self.tiros_da_nave + self.tiros_inimigos:
-            tiro.desenha()
+        self.atualiza_informacoes()
 
         if not self.inimigos:
             raise FimDeFase()
@@ -305,6 +313,9 @@ class Jogo:
             inimigo = Inimigo(x, y, jogo)
             self.inimigos.append(inimigo)
 
+    def atualiza_informacoes(self):
+        texto_pontos = self.fonte.render(f"{self.pontos:05d}", False, (0, 255,0))
+        self.tela.blit(texto_pontos, (LARGURA - texto_pontos.get_width(), ALTURA))
 
 try:
     jogo = Jogo()
