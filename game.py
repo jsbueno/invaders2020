@@ -11,6 +11,15 @@ tela = None
 TAMANHO_NAVE = 64
 
 
+class EventoDoJogo(BaseException):
+    pass
+
+class FimDeJogo(EventoDoJogo):
+    pass
+
+class JogadorMorreu(EventoDoJogo):
+    pass
+
 class Objeto:
 
     cor = (255, 255, 255)
@@ -58,14 +67,19 @@ class Objeto:
         self.morrer()
 
     def morrer(self):
-        self.lista.remove(self)
+        try:
+            self.lista.remove(self)
+        except ValueError:
+            pass
 
 
 class Nave(Objeto):
     cor = (0, 255, 0)
     arquivo_imagem = "ship.png"
 
-    def __init__(self, x, y, jogo):
+    def __init__(self,jogo):
+        x=LARGURA // 2
+        y=ALTURA - TAMANHO_NAVE
         super().__init__(x, y, jogo)
         self.ultimo_tiro = 0
         self.tempo_entre_tiros = 30
@@ -81,6 +95,7 @@ class Nave(Objeto):
 
         if teclas[pygame.K_SPACE]:
             if (
+                not self.jogo.tiros_da_nave or
                 (self.cont - self.ultimo_tiro) > self.tempo_entre_tiros and
                 len(self.lista) < self.maximo_tiros
             ):
@@ -101,6 +116,8 @@ class Inimigo(Objeto):
     def __init__(self, x, y, jogo):
         super().__init__(x, y, jogo)
         self.lista = jogo.inimigos
+        self.max_voltas_na_mesma_linha = 2
+        self.voltas_na_mesma_linha = 0
 
     def atualiza(self):
         super().atualiza()
@@ -108,10 +125,22 @@ class Inimigo(Objeto):
             self.x += self.largura // 2
             if self.x + self.largura > LARGURA:
                 self.x = 0
+                self.voltas_na_mesma_linha += 1
+                if self.voltas_na_mesma_linha > self.max_voltas_na_mesma_linha:
+                    self.y += self.altura
+                    self.voltas_na_mesma_linha = 0
+
+        if self.y + self.altura >= ALTURA:
+            raise JogadorMorreu()
+
+        if self.rect.colliderect(self.jogo.nave.rect):
+            self.JogadorMorreu()
+
 
 
 class Tiro(Objeto):
     pass
+
 
 class TiroAmigo(Tiro):
     cont = 0
@@ -134,31 +163,20 @@ class TiroAmigo(Tiro):
         for inimigo in self.jogo.inimigos:
             if self.rect.colliderect(inimigo.rect):
                 inimigo.acertado(1)
+                self.morrer()
+
 
 class Jogo:
 
     def __init__(self):
         self.tela = pygame.display.set_mode(TAMANHO)
         self.pontos = 0
+        self.fase = 0
 
     def principal(self):
-        self.nave = Nave(x=LARGURA // 2, y=ALTURA - TAMANHO_NAVE, jogo=self)
-        self.inimigos = []
-        self.tiros_da_nave = []
-        self.tiros_inimigos = []
-
-        total_inimigos = 7
-
-        for i in range(total_inimigos):
-            inimigo = Inimigo(
-                x = i * (LARGURA / total_inimigos),
-                y = TAMANHO_NAVE,
-                jogo = self
-            )
-            self.inimigos.append(inimigo)
+        self.inicializa_fase()
 
         fim_de_jogo = False
-
         while not fim_de_jogo:
 
             for evento in pygame.event.get():
@@ -186,6 +204,37 @@ class Jogo:
             pygame.display.flip()
             pygame.event.pump()
             pygame.time.delay(30)
+
+
+    def inicializa_fase (self):
+
+        inimigos_por_fase = {
+            0: 21,
+            1: 28,
+            2: 28,
+            3: 35,
+            4: 35,
+            5: 42,
+        }
+
+        self.nave = Nave(jogo=self)
+        self.inimigos = []
+        self.tiros_da_nave = []
+        self.tiros_inimigos = []
+
+        total_inimigos = inimigos_por_fase[self.fase]
+        inimigos_por_linha = 7
+        espaco_para_cada_nave = (LARGURA / inimigos_por_linha)
+
+        for i in range(total_inimigos):
+            linha_dos_inimigos = i // inimigos_por_linha
+
+            x = (i % inimigos_por_linha) * espaco_para_cada_nave + (linha_dos_inimigos % 2) * (espaco_para_cada_nave // 2)
+
+            y = TAMANHO_NAVE * (1 + linha_dos_inimigos)
+            inimigo = Inimigo(x, y, jogo)
+            self.inimigos.append(inimigo)
+
 
 
 jogo = Jogo()

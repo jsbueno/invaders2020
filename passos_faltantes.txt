@@ -1,8 +1,8 @@
 Limitar taxa de tiros [feito]
 tiros do inimigo
 morte do jogador
-movimento de inimigos: vai descendo
-arranjo de inimigos na tela
+arranjo de inimigos na tela [feito]
+movimento de inimigos: vai descendo <-
 
 Acumular pontos
     - Mostrar pontos na tela
