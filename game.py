@@ -18,6 +18,7 @@ class Objeto:
         self.altura = TAMANHO_NAVE
         self.jogo = jogo
         self.lista = []
+        self.image = None
 
     @property
     def rect(self):
@@ -27,7 +28,10 @@ class Objeto:
         pass
 
     def desenha(self):
-        pygame.draw.rect(self.jogo.tela, self.cor, (self.x, self.y, self.largura, self.altura))
+        if not self.image:
+            pygame.draw.rect(self.jogo.tela, self.cor, (self.x, self.y, self.largura, self.altura))
+        else:
+            self.jogo.tela.blit(self.image, self.rect)
 
     def acertado(self, forca):
         self.morrer()
@@ -38,6 +42,13 @@ class Objeto:
 
 class Nave(Objeto):
     cor = (0, 255, 0)
+
+    def __init__(self, x, y, jogo):
+        super().__init__(x, y, jogo)
+        imagem = pygame.image.load("media/ship.png")
+        self.image = pygame.transform.scale(imagem, (self.largura, self.altura))
+        self.image.fill(self.cor, special_flags=pygame.BLEND_ADD)
+
     def atualiza(self):
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_LEFT]:
