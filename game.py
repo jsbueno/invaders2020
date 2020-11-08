@@ -45,7 +45,7 @@ class Objeto:
         self.cont = 0
 
     def carrega_imagem(self):
-        if self.__class__.base_image:
+        if self.__class__.__dict__.get("base_image"):
             self.image = self.__class__.base_image
             return
 
@@ -136,6 +136,7 @@ class Inimigo(Objeto):
     tempo_entre_tiros = 50
     valor = 100
     energia = 1
+    divisor_velocidade = 4
 
     arquivo_imagem = "invader01_00.png"
 
@@ -149,7 +150,7 @@ class Inimigo(Objeto):
 
     def atualiza(self):
         super().atualiza()
-        if self.cont % 4 == 0:
+        if self.cont % self.divisor_velocidade == 0:
             self.x += self.largura // 2
             if self.x + self.largura > LARGURA:
                 self.x = 0
@@ -178,6 +179,15 @@ class Inimigo(Objeto):
     def morrer(self):
         self.jogo.pontos += self.valor
         super().morrer()
+
+
+class InimigoBoss(Inimigo):
+    cor = (255, 192, 0)
+    forca_do_tiro = 3
+    chance_de_tiro = .05
+    valor = 1000
+    energia = 5
+    divisor_velocidade = 8
 
 
 class Tiro(Objeto):
@@ -234,8 +244,6 @@ class TiroInimigo(Tiro):
         if self.rect.colliderect(self.jogo.nave.rect):
             self.jogo.nave.acertado(self.forca)
             self.morrer()
-
-
 
 
 class Jogo:
@@ -303,7 +311,11 @@ class Jogo:
         self.tiros_da_nave = []
         self.tiros_inimigos = []
 
-        total_inimigos = inimigos_por_fase[self.fase]
+        try:
+            total_inimigos = inimigos_por_fase[self.fase]
+        except KeyError:
+            print("Voce venceu a última fase - parabéns!")
+            raise FimDeJogo()
         inimigos_por_linha = 7
         espaco_para_cada_nave = (LARGURA / inimigos_por_linha)
 
@@ -315,6 +327,9 @@ class Jogo:
             y = TAMANHO_NAVE * (1 + linha_dos_inimigos)
             inimigo = Inimigo(x, y, jogo)
             self.inimigos.append(inimigo)
+
+        if self.fase >= 1:
+            self.inimigos.append(InimigoBoss(0, 0, jogo))
 
     def atualiza_informacoes(self):
 
@@ -339,8 +354,6 @@ class Jogo:
 
         pygame.draw.rect(self.tela, cor, (esquerda, topo, int(energia * largura), TAMANHO_TEXTO // 2))
         pygame.draw.rect(self.tela, (255, 255, 255), (esquerda, topo, largura, TAMANHO_TEXTO // 2), width=3)
-
-
 
 
 try:

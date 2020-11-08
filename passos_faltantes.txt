@@ -6,7 +6,7 @@ arranjo de inimigos na tela [feito]
 movimento de inimigos: vai descendo [feito]
 
 Acumular pontos [feito]
-Mostrar informacoes na tela <----
+Mostrar informacoes na tela [feito]
 
 Transformar fases em classes com atributos para cada elemento
 
