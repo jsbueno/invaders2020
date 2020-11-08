@@ -7,26 +7,23 @@ tela = None
 TAMANHO_NAVE = 64
 
 
-def inicio():
-    global tela
-    tela = pygame.display.set_mode(TAMANHO)
-
 
 class Objeto:
 
     cor = (255, 255, 255)
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, jogo):
         self.x = x
         self.y = y
         self.largura = TAMANHO_NAVE
         self.altura = TAMANHO_NAVE
+        self.jogo = jogo
 
     def atualiza(self):
         pass
 
     def desenha(self):
-        pygame.draw.rect(tela, self.cor, (self.x, self.y, self.largura, self.altura))
+        pygame.draw.rect(self.jogo.tela, self.cor, (self.x, self.y, self.largura, self.altura))
 
 
 class Nave(Objeto):
@@ -56,43 +53,53 @@ class Inimigo(Objeto):
         self.cont += 1
 
 
-def principal():
+class Jogo:
 
-    nave = Nave(x=LARGURA // 2, y=ALTURA - TAMANHO_NAVE)
-    inimigos = []
+    def __init__(self):
+        self.tela = pygame.display.set_mode(TAMANHO)
 
-    total_inimigos = 7
+    def principal(self):
 
-    for i in range(total_inimigos):
-        inimigo = Inimigo(
-            x = i * (LARGURA / total_inimigos),
-            y = TAMANHO_NAVE
-        )
-        inimigos.append(inimigo)
+        self.nave = Nave(x=LARGURA // 2, y=ALTURA - TAMANHO_NAVE, jogo=self)
+        self.inimigos = []
+        self.tiros_da_nave = []
+        self.tiros_inimigos = []
 
-    fim_de_jogo = False
+        total_inimigos = 7
 
-    while not fim_de_jogo:
+        for i in range(total_inimigos):
+            inimigo = Inimigo(
+                x = i * (LARGURA / total_inimigos),
+                y = TAMANHO_NAVE,
+                jogo = self
+            )
+            self.inimigos.append(inimigo)
 
-        for evento in pygame.event.get():
-            if evento.type == pygame.QUIT or evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-                fim_de_jogo = True
-            #if evento.type == pygame.KEYDOWN:
-            #    atualiza(evento)
-        nave.atualiza()
-        for inimigo in inimigos:
-            inimigo.atualiza()
+        fim_de_jogo = False
 
-        tela.fill((0, 0, 0))
+        while not fim_de_jogo:
 
-        nave.desenha()
-        for inimigo in inimigos:
-            inimigo.desenha()
+            for evento in pygame.event.get():
+                if evento.type == pygame.QUIT or evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                    fim_de_jogo = True
+                #if evento.type == pygame.KEYDOWN:
+                #    atualiza(evento)
+            self.nave.atualiza()
+            for inimigo in self.inimigos:
+                inimigo.atualiza()
 
-        pygame.display.flip()
-        pygame.event.pump()
-        pygame.time.delay(30)
+            self.tela.fill((0, 0, 0))
 
-inicio()
-principal()
+            self.nave.desenha()
+            for inimigo in self.inimigos:
+                inimigo.desenha()
+
+            pygame.display.flip()
+            pygame.event.pump()
+            pygame.time.delay(30)
+
+jogo = Jogo()
+
+jogo.principal()
+
 pygame.quit()
