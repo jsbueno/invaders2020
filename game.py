@@ -42,6 +42,7 @@ class Objeto:
     def carrega_imagem(self):
         if self.__class__.base_image:
             self.image = self.__class__.base_image
+            return
 
         caminho = MIDIAS / self.arquivo_imagem
         if not caminho.exists():
