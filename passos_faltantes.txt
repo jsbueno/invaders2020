@@ -1,14 +1,15 @@
 Limitar taxa de tiros [feito]
 tiros do inimigo
-morte do jogador <-
+evolucao das fases
+morte do jogador [feito]
 arranjo de inimigos na tela [feito]
 movimento de inimigos: vai descendo [feito]
 
 Acumular pontos
-    - Mostrar pontos na tela
+Mostrar informacoes na tela
 
 
-tela de fim e de inicio do jogo
+tela de fim e de inicio do jogo, mudanca de fase
 som
 animacao das naves
 

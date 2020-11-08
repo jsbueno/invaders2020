@@ -92,6 +92,8 @@ class Nave(Objeto):
     def atualiza(self):
         super().atualiza()
         teclas = pygame.key.get_pressed()
+        if self.cont % 4 != 0:
+            return
         if teclas[pygame.K_LEFT]:
             self.x -= self.largura // 2
         if teclas[pygame.K_RIGHT]:
