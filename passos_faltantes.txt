@@ -1,0 +1,15 @@
+Limitar taxa de tiros [feito]
+tiros do inimigo
+morte do jogador
+movimento de inimigos: vai descendo
+arranjo de inimigos na tela
+
+Acumular pontos
+    - Mostrar pontos na tela
+
+
+tela de fim e de inicio do jogo
+som
+animacao das naves
+
+

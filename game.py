@@ -25,6 +25,7 @@ class Objeto:
         self.jogo = jogo
         self.lista = []
         self.carrega_imagem()
+        self.cont = 0
 
     def carrega_imagem(self):
         if self.__class__.base_image:
@@ -45,7 +46,7 @@ class Objeto:
         return pygame.Rect(self.x, self.y, self.largura, self.altura)
 
     def atualiza(self):
-        pass
+        self.cont += 1
 
     def desenha(self):
         if not self.image:
@@ -66,9 +67,12 @@ class Nave(Objeto):
 
     def __init__(self, x, y, jogo):
         super().__init__(x, y, jogo)
-
+        self.ultimo_tiro = 0
+        self.tempo_entre_tiros = 30
+        self.maximo_tiros = 3
 
     def atualiza(self):
+        super().atualiza()
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_LEFT]:
             self.x -= self.largura // 2
@@ -76,7 +80,12 @@ class Nave(Objeto):
             self.x += self.largura // 2
 
         if teclas[pygame.K_SPACE]:
-            tiro = TiroAmigo(self.x, self.y - self.altura, self.jogo)
+            if (
+                (self.cont - self.ultimo_tiro) > self.tempo_entre_tiros and
+                len(self.lista) < self.maximo_tiros
+            ):
+                tiro = TiroAmigo(self.x, self.y - self.altura, self.jogo)
+                self.ultimo_tiro = self.cont
 
         if self.x < 0:
             self.x = 0
@@ -87,7 +96,6 @@ class Nave(Objeto):
 class Inimigo(Objeto):
     cor = (192, 0, 0)
 
-    cont = 0
     arquivo_imagem = "invader01_00.png"
 
     def __init__(self, x, y, jogo):
@@ -95,11 +103,11 @@ class Inimigo(Objeto):
         self.lista = jogo.inimigos
 
     def atualiza(self):
+        super().atualiza()
         if self.cont % 4 == 0:
             self.x += self.largura // 2
             if self.x + self.largura > LARGURA:
                 self.x = 0
-        self.cont += 1
 
 
 class Tiro(Objeto):
@@ -113,11 +121,12 @@ class TiroAmigo(Tiro):
         super().__init__(x, y, jogo)
 
         self.lista = self.jogo.tiros_da_nave
-        self.x += self.largura // 2 - self.largura // 8
-        self.largura = self.largura // 4
+        self.x += self.largura // 2 - self.largura // 16
+        self.largura = self.largura // 8
         self.lista.append(self)
 
     def atualiza(self):
+        super().atualiza()
         if not self.cont % 2:
             self.y -= self.altura // 2
         if self.y <= 0:
