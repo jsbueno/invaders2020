@@ -58,6 +58,8 @@ class Objeto:
         self.image = pygame.transform.scale(imagem, (self.largura, self.altura))
         self.image.fill(self.cor, special_flags=pygame.BLEND_ADD)
         self.__class__.base_image = self.image
+        miniatura = self.__class__.miniatura = pygame.transform.scale(imagem, (32, 32))
+        miniatura.fill((255, 255, 255), special_flags=pygame.BLEND_ADD)
 
     @property
     def rect(self):
@@ -317,10 +319,16 @@ class Jogo:
         texto_pontos = self.fonte.render(f"{self.pontos:05d}", False, (0, 255,0))
         self.tela.blit(texto_pontos, (LARGURA - texto_pontos.get_width(), ALTURA))
 
+        naves_vida = pygame.Surface((32 * self.vidas, 32))
+
+        for i in range(self.vidas):
+            naves_vida.blit(Nave.miniatura, (i * 32, 0))
+        self.tela.blit(naves_vida, (0, ALTURA))
+
 try:
     jogo = Jogo()
     jogo.principal()
 except FimDeJogo:
-    print("Jogo encerrado")
+    print(f"Jogo encerrado: total de pontos {jogo.pontos}")
 finally:
     pygame.quit()

@@ -5,8 +5,8 @@ morte do jogador [feito]
 arranjo de inimigos na tela [feito]
 movimento de inimigos: vai descendo [feito]
 
-Acumular pontos <-
-Mostrar informacoes na tela <-
+Acumular pontos [feito]
+Mostrar informacoes na tela <----
 
 Transformar fases em classes com atributos para cada elemento
 
