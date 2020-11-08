@@ -8,6 +8,7 @@ movimento de inimigos: vai descendo [feito]
 Acumular pontos
 Mostrar informacoes na tela
 
+Transformar fases em classes com atributos para cada elemento
 
 tela de fim e de inicio do jogo, mudanca de fase
 som

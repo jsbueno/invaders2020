@@ -1,6 +1,8 @@
+import random
 from pathlib import Path
 
 import pygame
+
 
 MIDIAS = Path("media")
 
@@ -88,6 +90,7 @@ class Nave(Objeto):
         self.ultimo_tiro = 0
         self.tempo_entre_tiros = 30
         self.maximo_tiros = 3
+        self.energia = 3
 
     def atualiza(self):
         super().atualiza()
@@ -100,6 +103,7 @@ class Nave(Objeto):
             self.x += self.largura // 2
 
         if teclas[pygame.K_SPACE]:
+
             if (
                 not self.jogo.tiros_da_nave or
                 (self.cont - self.ultimo_tiro) > self.tempo_entre_tiros and
@@ -113,9 +117,17 @@ class Nave(Objeto):
         elif self.x + self.largura > LARGURA:
             self.x = LARGURA - self.largura
 
+    def acertado(self, forca):
+        self.energia -= forca
+        if self.energia < 0:
+            raise JogadorMorreu()
+
 
 class Inimigo(Objeto):
     cor = (192, 0, 0)
+    forca_do_tiro = 1
+    chance_de_tiro = .01
+    tempo_entre_tiros = 50
 
     arquivo_imagem = "invader01_00.png"
 
@@ -124,6 +136,8 @@ class Inimigo(Objeto):
         self.lista = jogo.inimigos
         self.max_voltas_na_mesma_linha = 2
         self.voltas_na_mesma_linha = 0
+
+        self.ultimo_tiro = 0
 
     def atualiza(self):
         super().atualiza()
@@ -140,29 +154,48 @@ class Inimigo(Objeto):
             raise JogadorMorreu()
 
         if self.rect.colliderect(self.jogo.nave.rect):
-            self.JogadorMorreu()
+            raise JogadorMorreu()
+
+        if random.random() <= self.chance_de_tiro:
+            self.tenta_atirar()
+
+    def tenta_atirar(self):
+        print("tentando atirar")
+        qtd = len(self.jogo.tiros_inimigos)
+        if qtd >= 3: # self.jogo.fase.max_tiros_inimigos:
+            return
+        if (self.cont - self.ultimo_tiro) > self.tempo_entre_tiros:
+                tiro = TiroInimigo(self.x, self.y + self.altura, self.jogo, self.forca_do_tiro)
+                self.ultimo_tiro = self.cont
 
 
 
 class Tiro(Objeto):
-    pass
-
-
-class TiroAmigo(Tiro):
-    cont = 0
+    divisor_velocidade = 2
 
     def __init__(self, x, y, jogo):
 
         super().__init__(x, y, jogo)
-
-        self.lista = self.jogo.tiros_da_nave
         self.x += self.largura // 2 - self.largura // 16
         self.largura = self.largura // 8
+
+    def adiciona_ao_jogo(self):
         self.lista.append(self)
+
+
+
+class TiroAmigo(Tiro):
+
+    def __init__(self, x, y, jogo):
+
+        super().__init__(x, y, jogo)
+        self.lista = self.jogo.tiros_da_nave
+        self.adiciona_ao_jogo()
+
 
     def atualiza(self):
         super().atualiza()
-        if not self.cont % 2:
+        if not self.cont % self.divisor_velocidade:
             self.y -= self.altura // 2
         if self.y <= 0:
             self.morrer()
@@ -171,6 +204,25 @@ class TiroAmigo(Tiro):
                 inimigo.acertado(1)
                 self.morrer()
 
+class TiroInimigo(Tiro):
+    cor = 255, 255, 212
+    divisor_velocidade = 4
+
+    def __init__(self, x, y, jogo, forca=1):
+        super().__init__(x, y, jogo)
+        self.lista = self.jogo.tiros_inimigos
+        self.forca = forca
+        self.adiciona_ao_jogo()
+
+
+    def atualiza(self):
+        super().atualiza()
+        if not self.cont % self.divisor_velocidade:
+            self.y += self.altura // 2
+        if self.y >= ALTURA:
+            self.morrer()
+        if self.rect.colliderect(self.jogo.nave.rect):
+            self.jogo.nave.acertado(self.forca)
 
 class Jogo:
 
@@ -205,7 +257,7 @@ class Jogo:
         for inimigo in self.inimigos:
             inimigo.atualiza()
 
-        for tiro in self.tiros_da_nave:
+        for tiro in self.tiros_da_nave + self.tiros_inimigos:
             tiro.atualiza()
 
         self.tela.fill((0, 0, 0))
@@ -213,7 +265,7 @@ class Jogo:
         self.nave.desenha()
         for inimigo in self.inimigos:
             inimigo.desenha()
-        for tiro in self.tiros_da_nave:
+        for tiro in self.tiros_da_nave + self.tiros_inimigos:
             tiro.desenha()
 
         if not self.inimigos:
