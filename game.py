@@ -1,11 +1,13 @@
 import pygame
 
 TAMANHO = (640, 480)
+LARGURA, ALTURA = TAMANHO
 tela = None
 
 tamanho_nave = 64
 
-x, y = TAMANHO[0] // 2, TAMANHO[1] - tamanho_nave
+x = LARGURA // 2
+y = ALTURA - tamanho_nave
 
 def inicio():
     global tela
@@ -13,10 +15,10 @@ def inicio():
 
 def atualiza(evento):
     global x, y
-    if evento.key == pygame.K_LEFT:
-        x -= tamanho_nave
-    elif evento.key == pygame.K_RIGHT:
-        x += tamanho_nave
+    if evento.key == pygame.K_LEFT and x > 0:
+        x -= tamanho_nave // 2
+    elif evento.key == pygame.K_RIGHT and x < (LARGURA - tamanho_nave):
+        x += tamanho_nave // 2
 
 def desenha():
     global x, y, tamanho_nave
