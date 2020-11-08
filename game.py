@@ -14,6 +14,9 @@ TAMANHO_NAVE = 64
 class EventoDoJogo(BaseException):
     pass
 
+class FimDeFase(EventoDoJogo):
+    pass
+
 class FimDeJogo(EventoDoJogo):
     pass
 
@@ -172,38 +175,50 @@ class Jogo:
         self.tela = pygame.display.set_mode(TAMANHO)
         self.pontos = 0
         self.fase = 0
+        self.vidas = 3
 
     def principal(self):
-        self.inicializa_fase()
+        while True:
+            self.inicializa_fase()
+            try:
+                while True:
+                    self.laco_principal()
+            except JogadorMorreu:
+                print("Jogador morreu")
+                self.vidas -= 1
+                print(f"Vidas restantes: {self.vidas}")
+                if self.vidas > 0:
+                    raise FimDeJogo()
+            except FimDeFase:
+                self.fase += 1
 
-        fim_de_jogo = False
-        while not fim_de_jogo:
+    def laco_principal(self):
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT or evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
+                raise FimDeJogo()
 
-            for evento in pygame.event.get():
-                if evento.type == pygame.QUIT or evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-                    fim_de_jogo = True
-                #if evento.type == pygame.KEYDOWN:
-                #    atualiza(evento)
-            self.nave.atualiza()
+        self.nave.atualiza()
 
+        for inimigo in self.inimigos:
+            inimigo.atualiza()
 
-            for inimigo in self.inimigos:
-                inimigo.atualiza()
+        for tiro in self.tiros_da_nave:
+            tiro.atualiza()
 
-            for tiro in self.tiros_da_nave:
-                tiro.atualiza()
+        self.tela.fill((0, 0, 0))
 
-            self.tela.fill((0, 0, 0))
+        self.nave.desenha()
+        for inimigo in self.inimigos:
+            inimigo.desenha()
+        for tiro in self.tiros_da_nave:
+            tiro.desenha()
 
-            self.nave.desenha()
-            for inimigo in self.inimigos:
-                inimigo.desenha()
-            for tiro in self.tiros_da_nave:
-                tiro.desenha()
+        if not self.inimigos:
+            raise FimDeFase()
 
-            pygame.display.flip()
-            pygame.event.pump()
-            pygame.time.delay(30)
+        pygame.display.flip()
+        pygame.event.pump()
+        pygame.time.delay(30)
 
 
     def inicializa_fase (self):
@@ -236,7 +251,10 @@ class Jogo:
             self.inimigos.append(inimigo)
 
 
-
-jogo = Jogo()
-jogo.principal()
-pygame.quit()
+try:
+    jogo = Jogo()
+    jogo.principal()
+except FimDeJogo:
+    print("Jogo encerrado")
+finally:
+    pygame.quit()
