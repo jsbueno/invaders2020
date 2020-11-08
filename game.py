@@ -19,36 +19,39 @@ class Objeto:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.tamanho = TAMANHO_NAVE
+        self.largura = TAMANHO_NAVE
+        self.altura = TAMANHO_NAVE
 
     def atualiza(self):
         pass
 
     def desenha(self):
-        pygame.draw.rect(tela, self.cor, (self.x, self.y, self.tamanho, self.tamanho))
+        pygame.draw.rect(tela, self.cor, (self.x, self.y, self.largura, self.altura))
 
 
 class Nave(Objeto):
-
+    cor = (0, 255, 0)
     def atualiza(self):
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_LEFT]:
-            self.x -= self.tamanho // 2
+            self.x -= self.largura // 2
         if teclas[pygame.K_RIGHT]:
-            self.x += self.tamanho // 2
+            self.x += self.largura // 2
         if self.x < 0:
             self.x = 0
-        elif self.x + self.tamanho > LARGURA:
-            self.x = LARGURA - self.tamanho
+        elif self.x + self.largura > LARGURA:
+            self.x = LARGURA - self.largura
+
 
 class Inimigo(Objeto):
+    cor = (192, 0, 0)
 
     cont = 0
 
     def atualiza(self):
         if self.cont % 4 == 0:
-            self.x += self.tamanho // 2
-            if self.x + self.tamanho > LARGURA:
+            self.x += self.largura // 2
+            if self.x + self.largura > LARGURA:
                 self.x = 0
         self.cont += 1
 
@@ -56,7 +59,16 @@ class Inimigo(Objeto):
 def principal():
 
     nave = Nave(x=LARGURA // 2, y=ALTURA - TAMANHO_NAVE)
-    inimigo = Inimigo(x=0, y = TAMANHO_NAVE)
+    inimigos = []
+
+    total_inimigos = 7
+
+    for i in range(total_inimigos):
+        inimigo = Inimigo(
+            x = i * (LARGURA / total_inimigos),
+            y = TAMANHO_NAVE
+        )
+        inimigos.append(inimigo)
 
     fim_de_jogo = False
 
@@ -68,12 +80,14 @@ def principal():
             #if evento.type == pygame.KEYDOWN:
             #    atualiza(evento)
         nave.atualiza()
-        inimigo.atualiza()
+        for inimigo in inimigos:
+            inimigo.atualiza()
 
         tela.fill((0, 0, 0))
 
         nave.desenha()
-        inimigo.desenha()
+        for inimigo in inimigos:
+            inimigo.desenha()
 
         pygame.display.flip()
         pygame.event.pump()
