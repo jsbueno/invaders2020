@@ -1,5 +1,7 @@
 #! /home/gwidion/apresentacao/pythonbrasil2020/invaders2020/env39/bin/python
 
+import random
+
 import pygame
 
 cores = [(255, 0, 0), (255, 255, 0), (255, 128, 0), (192, 128,0), (0, 255,0)]
@@ -9,6 +11,7 @@ PASSO = 10
 FPS = 30
 DELAY = int(1000 / FPS)
 TAMANHO = 50
+
 
 
 def iniciar():
@@ -24,6 +27,17 @@ class Objeto:
 
     def get_rect(self):
         return pygame.Rect(self.x, self.y, self.tamanho, self.tamanho)
+
+    def atualiza(self):
+        if self.x <= 0:
+            self.x = 0
+        elif self.x >= (LARGURA - TAMANHO):
+            self.x = LARGURA- TAMANHO
+
+        if self.y <= 0:
+            self.y = 0
+        elif self.y >= (ALTURA - TAMANHO):
+            self.y = ALTURA - TAMANHO
 
 
 class Jogador(Objeto):
@@ -60,15 +74,8 @@ class Jogador(Objeto):
         self.x += self.vel_x
         self.y += self.vel_y
 
-        if self.x <= 0:
-            self.x = 0
-        elif self.x >= (LARGURA - TAMANHO):
-            self.x = LARGURA- TAMANHO
+        super().atualiza()
 
-        if self.y <= 0:
-            self.y = 0
-        elif self.y >= (ALTURA - TAMANHO):
-            self.y = ALTURA - TAMANHO
 
 
 class Inimigo(Objeto):
@@ -77,6 +84,7 @@ class Inimigo(Objeto):
         self.cor = (192, 0, 192)
         self.x, self.y = (LARGURA - TAMANHO,  ALTURA // 2 + numero * TAMANHO * 2)
         self.cont = 0
+        self.vel_x = 0
 
     def atualiza(self):
         self.cont += 1
@@ -87,8 +95,15 @@ class Inimigo(Objeto):
         else:
             self.cont = -10
 
+        if random.random() < 0.1:
+            self.vel_x += random.randrange(-3, +3, 1)
+
+        self.x += self.vel_x
+
         if self.get_rect().colliderect(jogador.get_rect()):
             raise RuntimeError()
+
+        super().atualiza()
 
 
 def principal():
@@ -98,7 +113,10 @@ def principal():
     indice = 0
 
     jogador = Jogador()
-    inimigo = Inimigo(0)
+    inimigos = []
+
+    for i in range(4):
+        inimigos.append(Inimigo(i))
 
     while executando:
 
@@ -113,12 +131,14 @@ def principal():
                 executando = False
 
         jogador.atualiza(eventos)
-        inimigo.atualiza()
+        for inimigo in inimigos:
+            inimigo.atualiza()
 
         tela.fill((0, 0, 0))
 
         pygame.draw.rect(tela, cor, jogador.get_rect() )
-        pygame.draw.rect(tela, inimigo.cor, inimigo.get_rect() )
+        for inimigo in inimigos:
+            pygame.draw.rect(tela, inimigo.cor, inimigo.get_rect() )
         pygame.display.flip()
         pygame.time.delay(DELAY)
 
