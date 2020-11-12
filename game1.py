@@ -15,65 +15,90 @@ def iniciar():
     global tela
     tela = pygame.display.set_mode((LARGURA, ALTURA))
 
+class Objeto:
+    def __init__(self):
+        self.tamanho = 50
 
-x = y = vel_x = vel_y = 0
+    def atualiza(self):
+        pass
 
-x_i, y_i =  (LARGURA - TAMANHO,  ALTURA // 2)
-cor_i = (192, 0, 192)
-cont_i = 0
-
-def atualiza_i():
-    global x_i, y_i, cont_i
-    cont_i += 1
-    if cont_i < 10:
-        y_i -= PASSO
-    elif cont_i < 30:
-        y_i += PASSO
-    else:
-        cont_i = -10
+    def get_rect(self):
+        return pygame.Rect(self.x, self.y, self.tamanho, self.tamanho)
 
 
-def atualiza(events):
-    global x, y, vel_x, vel_y
+class Jogador(Objeto):
+    def __init__(self):
+        super().__init__()
 
-    for event in events:
-        if event.type == pygame.KEYDOWN:
-            tecla = event.key
+        self.x = 0
+        self.y = 0
+        self.vel_x = 0
+        self.vel_y = 0
 
-            if tecla == pygame.K_RIGHT:
-                vel_x += PASSO
-            if tecla == pygame.K_LEFT:
-                vel_x += -PASSO
-            if tecla == pygame.K_UP:
-                vel_y = -PASSO
-            if tecla == pygame.K_DOWN:
-                vel_y = PASSO
+    def atualiza(self, events):
 
-        if event.type == pygame.KEYUP:
-            tecla = event.key
-            if tecla == pygame.K_RIGHT or tecla == pygame.K_LEFT:
-                vel_x = 0
-            if tecla in {pygame.K_UP, pygame.K_DOWN}:
-                vel_y = 0
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                tecla = event.key
 
-    x += vel_x
-    y += vel_y
+                if tecla == pygame.K_RIGHT:
+                    self.vel_x += PASSO
+                if tecla == pygame.K_LEFT:
+                    self.vel_x += -PASSO
+                if tecla == pygame.K_UP:
+                    self.vel_y = -PASSO
+                if tecla == pygame.K_DOWN:
+                    self.vel_y = PASSO
 
-    if x <= 0:
-        x = 0
-    elif x >= (LARGURA - TAMANHO):
-        x = LARGURA- TAMANHO
+            if event.type == pygame.KEYUP:
+                tecla = event.key
+                if tecla == pygame.K_RIGHT or tecla == pygame.K_LEFT:
+                    self.vel_x = 0
+                if tecla in {pygame.K_UP, pygame.K_DOWN}:
+                    self.vel_y = 0
 
-    if y <= 0:
-        y = 0
-    elif y >= (ALTURA - TAMANHO):
-        y = ALTURA - TAMANHO
+        self.x += self.vel_x
+        self.y += self.vel_y
 
+        if self.x <= 0:
+            self.x = 0
+        elif self.x >= (LARGURA - TAMANHO):
+            self.x = LARGURA- TAMANHO
+
+        if self.y <= 0:
+            self.y = 0
+        elif self.y >= (ALTURA - TAMANHO):
+            self.y = ALTURA - TAMANHO
+
+
+class Inimigo(Objeto):
+    def __init__(self, numero):
+        super().__init__()
+        self.cor = (192, 0, 192)
+        self.x, self.y = (LARGURA - TAMANHO,  ALTURA // 2 + numero * TAMANHO * 2)
+        self.cont = 0
+
+    def atualiza(self):
+        self.cont += 1
+        if self.cont < 10:
+            self.y -= PASSO
+        elif self.cont < 30:
+            self.y += PASSO
+        else:
+            self.cont = -10
+
+        if self.get_rect().colliderect(jogador.get_rect()):
+            raise RuntimeError()
 
 
 def principal():
+    global jogador
+
     executando = True
     indice = 0
+
+    jogador = Jogador()
+    inimigo = Inimigo(0)
 
     while executando:
 
@@ -87,16 +112,23 @@ def principal():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 executando = False
 
-        atualiza(eventos)
-        atualiza_i()
+        jogador.atualiza(eventos)
+        inimigo.atualiza()
 
         tela.fill((0, 0, 0))
 
-        pygame.draw.rect(tela, cor, (x, y, TAMANHO, TAMANHO))
-        pygame.draw.rect(tela, cor_i, (x_i, y_i, TAMANHO, TAMANHO))
+        pygame.draw.rect(tela, cor, jogador.get_rect() )
+        pygame.draw.rect(tela, inimigo.cor, inimigo.get_rect() )
         pygame.display.flip()
         pygame.time.delay(DELAY)
 
 
 iniciar()
-principal()
+try:
+    principal()
+except RuntimeError:
+    print("O jogo acabou")
+else:
+    print("Voce saiu")
+finally:
+    pygame.quit()
