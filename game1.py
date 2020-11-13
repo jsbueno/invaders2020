@@ -32,8 +32,17 @@ def iniciar():
     tela = pygame.display.set_mode((LARGURA, ALTURA))
 
 class Objeto:
-    def __init__(self):
+    def __init__(self, pos=None, vel=None):
+        if pos is None:
+            pos = V2(0, 0)
+        if vel is None:
+            vel = V2(0, 0)
+        self.pos = pos
+        self.vel = vel
         self.tamanho = 50
+
+    x = property((lambda self: self.pos.x), (lambda self, valor: setattr(self.pos, "x", valor)))
+    y = property((lambda self: self.pos.y), (lambda self, valor: setattr(self.pos, "y", valor)))
 
     def atualiza(self):
         pass
@@ -42,6 +51,8 @@ class Objeto:
         return pygame.Rect(self.x, self.y, self.tamanho, self.tamanho)
 
     def atualiza(self):
+        self.pos += self.vel
+
         if self.x <= 0:
             self.x = 0
         elif self.x >= (LARGURA - TAMANHO):
@@ -54,25 +65,13 @@ class Objeto:
 
 
 class Jogador(Objeto):
-    vel_max = 2 * PASSO
+    vel_max = PASSO
     aceleracao = 2
 
     def __init__(self):
-        super().__init__()
+        super().__init__(pos=V2(0, ALTURA // 2))
 
-        self.pos = V2(0, ALTURA // 2)
-        self.vel = V2(0, 0)
         self.acel = V2(0,0)
-
-    @property
-    def x(self):
-        return self.pos.x
-    @x.setter
-    def x(self, valor):
-        self.pos.x = valor
-
-    y = property((lambda self: self.pos.y), (lambda self, valor: setattr(self.pos, "y", valor)))
-
 
     def atualiza(self, events):
 
@@ -98,18 +97,23 @@ class Jogador(Objeto):
 
         self.vel += self.acel
 
-        if self.vel.x > self.vel_max:
-            self.vel.x = self.vel_max
+        if abs(self.vel.x) > self.vel_max:
+            self.vel.x = self.vel_max * (-1 if self.vel.x < 0 else 1)
 
-        if self.vel.y > self.vel_max:
-            self.vel.y = self.vel_max
+        if abs(self.vel.y) > self.vel_max:
+            self.vel.y = self.vel_max * (-1 if self.vel.y < 0 else 1)
 
         self.vel *= 1
 
-        self.x += self.vel.x
-        self.y += self.vel.y
 
         super().atualiza()
+
+
+#class Tiro(Objeto):
+    #vel = V2(PASSO, 0)
+    #def __init__(self, pos):
+        #pass
+
 
 
 
@@ -119,21 +123,19 @@ class Inimigo(Objeto):
         self.cor = (192, 0, 192)
         self.x, self.y = (LARGURA - TAMANHO,  ALTURA // 2 + numero * TAMANHO * 2)
         self.cont = 0
-        self.vel_x = 0
+        self.vel = V2(0, 0)
 
     def atualiza(self):
         self.cont += 1
         if self.cont < 10:
-            self.y -= PASSO
+            self.vel.y = 10
         elif self.cont < 30:
-            self.y += PASSO
+            self.vel.y = -10
         else:
             self.cont = -10
 
         if random.random() < 0.1:
-            self.vel_x += random.randrange(-3, +3, 1)
-
-        self.x += self.vel_x
+            self.vel.x += random.randrange(-3, +3, 1)
 
         if self.get_rect().colliderect(jogador.get_rect()):
             raise JogadorMorreu()
