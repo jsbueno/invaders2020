@@ -13,6 +13,17 @@ DELAY = int(1000 / FPS)
 TAMANHO = 50
 
 
+class ExcecaoDoJogo(BaseException):
+    pass
+
+class JogadorMorreu(ExcecaoDoJogo):
+    pass
+
+class PassouDeFase(ExcecaoDoJogo):
+    pass
+
+class JogadorSaiu(ExcecaoDoJogo):
+    pass
 
 def iniciar():
     global tela
@@ -101,7 +112,7 @@ class Inimigo(Objeto):
         self.x += self.vel_x
 
         if self.get_rect().colliderect(jogador.get_rect()):
-            raise RuntimeError()
+            raise JogadorMorreu()
 
         super().atualiza()
 
@@ -128,7 +139,7 @@ def principal():
         eventos = pygame.event.get()
         for event in eventos:
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                executando = False
+                raise JogadorSaiu()
 
         jogador.atualiza(eventos)
         for inimigo in inimigos:
@@ -146,8 +157,10 @@ def principal():
 iniciar()
 try:
     principal()
-except RuntimeError:
-    print("O jogo acabou")
+except JogadorMorreu:
+    print("Você foi morto")
+except ExcecaoDoJogo:
+    print("O jogo acabou por que você saiu ou passou de fase")
 else:
     print("Voce saiu")
 finally:
