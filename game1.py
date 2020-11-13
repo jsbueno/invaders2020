@@ -6,7 +6,7 @@ import pygame
 
 from pygame import Vector2 as V2
 
-cores = [(255, 0, 0), (255, 255, 0), (255, 128, 0), (192, 128,0), (0, 255,0)]
+
 
 LARGURA, ALTURA = 640, 480
 PASSO = 10
@@ -32,6 +32,7 @@ class JogadorSaiu(ExcecaoDoJogo):
 class Objeto:
     tamanho = V2(50, 50)
 
+    imagem = None
 
     def __init__(self, jogo, pos=None, vel=None):
         self.jogo = jogo
@@ -65,15 +66,19 @@ class Objeto:
         elif self.y >= (ALTURA - TAMANHO):
             self.y = ALTURA - TAMANHO
 
+    def desenha(self):
+        pygame.draw.rect(self.jogo.tela, self.cor, self.get_rect())
 
 class Jogador(Objeto):
     vel_max = PASSO
     aceleracao = 2
+    cores = [(255, 0, 0), (255, 255, 0), (255, 128, 0), (192, 128,0), (0, 255,0)]
 
     def __init__(self, jogo):
         super().__init__(jogo, pos=V2(0, ALTURA // 2))
 
         self.acel = V2(0,0)
+        self.indice = 0
 
     def atualiza(self, events):
 
@@ -111,6 +116,9 @@ class Jogador(Objeto):
 
         super().atualiza()
 
+        self.cor = self.cores[self.indice]
+        self.indice = (self.indice + 1) % len(self.cores)
+
 
 class Tiro(Objeto):
     vel_inicial = V2(1.5 * PASSO, 0)
@@ -137,10 +145,12 @@ class Tiro(Objeto):
     def remove(self):
         self.jogo.tiros.remove(self)
 
-    def desenha(self):
+    def get_rect(self):
         x = int(self.pos.x)
         y = int(self.pos.y - self.altura / 2)
-        pygame.draw.rect(self.jogo.tela, self.cor, (x, y, TAMANHO // 2, self.altura))
+        return pygame.Rect (x, y, TAMANHO // 2, self.altura)
+
+
 
 class Inimigo(Objeto):
     def __init__(self, jogo, numero):
@@ -182,7 +192,6 @@ class Jogo:
 
     def principal(self):
 
-        indice = 0
 
         self.jogador = Jogador(self)
         self.inimigos = []
@@ -195,11 +204,6 @@ class Jogo:
         executando = True
         while executando:
 
-            cor = cores[indice]
-            indice += 1
-
-            if indice >= len(cores):
-                indice = 0
             eventos = pygame.event.get()
             for event in eventos:
                 if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -211,17 +215,20 @@ class Jogo:
             for tiro in self.tiros:
                 tiro.atualiza()
 
-            self.tela.fill((0, 0, 0))
+            self.desenha_fundo()
 
-            pygame.draw.rect(self.tela, cor, self.jogador.get_rect() )
+            self.jogador.desenha()
             for inimigo in self.inimigos:
-                pygame.draw.rect(self.tela, inimigo.cor, inimigo.get_rect() )
+                inimigo.desenha()
 
             for tiro in self.tiros:
                 tiro.desenha()
 
             pygame.display.flip()
             pygame.time.delay(DELAY)
+
+    def desenha_fundo(self):
+        self.tela.fill((0, 0, 0))
 
 
 jogo = Jogo()
