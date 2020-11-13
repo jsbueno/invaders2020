@@ -27,19 +27,21 @@ class PassouDeFase(ExcecaoDoJogo):
 class JogadorSaiu(ExcecaoDoJogo):
     pass
 
-def iniciar():
-    global tela
-    tela = pygame.display.set_mode((LARGURA, ALTURA))
+
 
 class Objeto:
-    def __init__(self, pos=None, vel=None):
+    tamanho = V2(50, 50)
+
+
+    def __init__(self, jogo, pos=None, vel=None):
+        self.jogo = jogo
         if pos is None:
             pos = V2(0, 0)
         if vel is None:
             vel = V2(0, 0)
         self.pos = pos
         self.vel = vel
-        self.tamanho = 50
+        self.limite_direito = LARGURA - self.tamanho.x
 
     x = property((lambda self: self.pos.x), (lambda self, valor: setattr(self.pos, "x", valor)))
     y = property((lambda self: self.pos.y), (lambda self, valor: setattr(self.pos, "y", valor)))
@@ -48,15 +50,15 @@ class Objeto:
         pass
 
     def get_rect(self):
-        return pygame.Rect(self.x, self.y, self.tamanho, self.tamanho)
+        return pygame.Rect(self.x, self.y, self.tamanho.x, self.tamanho.y)
 
     def atualiza(self):
         self.pos += self.vel
 
         if self.x <= 0:
             self.x = 0
-        elif self.x >= (LARGURA - TAMANHO):
-            self.x = LARGURA- TAMANHO
+        elif self.x >= self.limite_direito:
+            self.x = self.limite_direito
 
         if self.y <= 0:
             self.y = 0
@@ -68,8 +70,8 @@ class Jogador(Objeto):
     vel_max = PASSO
     aceleracao = 2
 
-    def __init__(self):
-        super().__init__(pos=V2(0, ALTURA // 2))
+    def __init__(self, jogo):
+        super().__init__(jogo, pos=V2(0, ALTURA // 2))
 
         self.acel = V2(0,0)
 
@@ -87,6 +89,8 @@ class Jogador(Objeto):
                     self.acel.y = - self.aceleracao
                 if tecla == pygame.K_DOWN:
                     self.acel.y = self.aceleracao
+                if tecla == pygame.K_SPACE:
+                    self.jogo.tiros.append(Tiro(self.jogo, self.pos + V2(self.tamanho.x,  self.tamanho.y // 2)))
 
             if event.type == pygame.KEYUP:
                 tecla = event.key
@@ -105,23 +109,44 @@ class Jogador(Objeto):
 
         self.vel *= 1
 
-
         super().atualiza()
 
 
-#class Tiro(Objeto):
-    #vel = V2(PASSO, 0)
-    #def __init__(self, pos):
-        #pass
+class Tiro(Objeto):
+    vel_inicial = V2(1.5 * PASSO, 0)
+    altura = TAMANHO / 5
+    cor = (0, 192, 255)
+    tamanho = V2(TAMANHO // 2, altura)
 
+    def __init__(self, jogo, pos):
+        super().__init__(jogo, pos, vel=self.vel_inicial)
+        self.limite_direito = LARGURA + 1
 
+    def atualiza(self):
+        super().atualiza()
 
+        if self.x >= LARGURA:
+            self.remove()
+
+        for inimigo in self.jogo.inimigos:
+            rect = self.get_rect()
+            if rect.colliderect(inimigo.get_rect()):
+                inimigo.acertado(self)
+                self.remove()
+
+    def remove(self):
+        self.jogo.tiros.remove(self)
+
+    def desenha(self):
+        x = int(self.pos.x)
+        y = int(self.pos.y - self.altura / 2)
+        pygame.draw.rect(self.jogo.tela, self.cor, (x, y, TAMANHO // 2, self.altura))
 
 class Inimigo(Objeto):
-    def __init__(self, numero):
-        super().__init__()
+    def __init__(self, jogo, numero):
+        pos = V2(LARGURA - TAMANHO,  ALTURA // 2 + numero * TAMANHO * 2)
+        super().__init__(jogo, pos)
         self.cor = (192, 0, 192)
-        self.x, self.y = (LARGURA - TAMANHO,  ALTURA // 2 + numero * TAMANHO * 2)
         self.cont = 0
         self.vel = V2(0, 0)
 
@@ -137,52 +162,71 @@ class Inimigo(Objeto):
         if random.random() < 0.1:
             self.vel.x += random.randrange(-3, +3, 1)
 
-        if self.get_rect().colliderect(jogador.get_rect()):
+        if self.get_rect().colliderect(self.jogo.jogador.get_rect()):
             raise JogadorMorreu()
 
         super().atualiza()
 
+    def acertado(self, objeto):
+        self.remove()
 
-def principal():
-    global jogador
-
-    executando = True
-    indice = 0
-
-    jogador = Jogador()
-    inimigos = []
-
-    for i in range(4):
-        inimigos.append(Inimigo(i))
-
-    while executando:
-
-        cor = cores[indice]
-        indice += 1
-
-        if indice >= len(cores):
-            indice = 0
-        eventos = pygame.event.get()
-        for event in eventos:
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                raise JogadorSaiu()
-
-        jogador.atualiza(eventos)
-        for inimigo in inimigos:
-            inimigo.atualiza()
-
-        tela.fill((0, 0, 0))
-
-        pygame.draw.rect(tela, cor, jogador.get_rect() )
-        for inimigo in inimigos:
-            pygame.draw.rect(tela, inimigo.cor, inimigo.get_rect() )
-        pygame.display.flip()
-        pygame.time.delay(DELAY)
+    def remove(self):
+        self.jogo.inimigos.remove(self)
 
 
-iniciar()
+class Jogo:
+
+    def __init__(self):
+
+        self.tela = pygame.display.set_mode((LARGURA, ALTURA))
+
+    def principal(self):
+
+        indice = 0
+
+        self.jogador = Jogador(self)
+        self.inimigos = []
+
+        for i in range(4):
+            self.inimigos.append(Inimigo(self, i))
+
+        self.tiros = []
+
+        executando = True
+        while executando:
+
+            cor = cores[indice]
+            indice += 1
+
+            if indice >= len(cores):
+                indice = 0
+            eventos = pygame.event.get()
+            for event in eventos:
+                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    raise JogadorSaiu()
+
+            self.jogador.atualiza(eventos)
+            for inimigo in self.inimigos:
+                inimigo.atualiza()
+            for tiro in self.tiros:
+                tiro.atualiza()
+
+            self.tela.fill((0, 0, 0))
+
+            pygame.draw.rect(self.tela, cor, self.jogador.get_rect() )
+            for inimigo in self.inimigos:
+                pygame.draw.rect(self.tela, inimigo.cor, inimigo.get_rect() )
+
+            for tiro in self.tiros:
+                tiro.desenha()
+
+            pygame.display.flip()
+            pygame.time.delay(DELAY)
+
+
+jogo = Jogo()
 try:
-    principal()
+    jogo.principal()
 except JogadorMorreu:
     print("Você foi morto")
 except ExcecaoDoJogo:
