@@ -4,6 +4,8 @@ import random
 
 import pygame
 
+from pygame import Vector2 as V2
+
 cores = [(255, 0, 0), (255, 255, 0), (255, 128, 0), (192, 128,0), (0, 255,0)]
 
 LARGURA, ALTURA = 640, 480
@@ -52,13 +54,25 @@ class Objeto:
 
 
 class Jogador(Objeto):
+    vel_max = 2 * PASSO
+    aceleracao = 2
+
     def __init__(self):
         super().__init__()
 
-        self.x = 0
-        self.y = 0
-        self.vel_x = 0
-        self.vel_y = 0
+        self.pos = V2(0, ALTURA // 2)
+        self.vel = V2(0, 0)
+        self.acel = V2(0,0)
+
+    @property
+    def x(self):
+        return self.pos.x
+    @x.setter
+    def x(self, valor):
+        self.pos.x = valor
+
+    y = property((lambda self: self.pos.y), (lambda self, valor: setattr(self.pos, "y", valor)))
+
 
     def atualiza(self, events):
 
@@ -67,23 +81,33 @@ class Jogador(Objeto):
                 tecla = event.key
 
                 if tecla == pygame.K_RIGHT:
-                    self.vel_x += PASSO
+                    self.acel.x = self.aceleracao
                 if tecla == pygame.K_LEFT:
-                    self.vel_x += -PASSO
+                    self.acel.x = - self.aceleracao
                 if tecla == pygame.K_UP:
-                    self.vel_y = -PASSO
+                    self.acel.y = - self.aceleracao
                 if tecla == pygame.K_DOWN:
-                    self.vel_y = PASSO
+                    self.acel.y = self.aceleracao
 
             if event.type == pygame.KEYUP:
                 tecla = event.key
-                if tecla == pygame.K_RIGHT or tecla == pygame.K_LEFT:
-                    self.vel_x = 0
+                if tecla in (pygame.K_RIGHT, pygame.K_LEFT):
+                    self.acel.x = 0
                 if tecla in {pygame.K_UP, pygame.K_DOWN}:
-                    self.vel_y = 0
+                    self.acel.y = 0
 
-        self.x += self.vel_x
-        self.y += self.vel_y
+        self.vel += self.acel
+
+        if self.vel.x > self.vel_max:
+            self.vel.x = self.vel_max
+
+        if self.vel.y > self.vel_max:
+            self.vel.y = self.vel_max
+
+        self.vel *= 1
+
+        self.x += self.vel.x
+        self.y += self.vel.y
 
         super().atualiza()
 
