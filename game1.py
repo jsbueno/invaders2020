@@ -1,10 +1,11 @@
 #! /home/gwidion/apresentacao/pythonbrasil2020/invaders2020/env39/bin/python
 
+from pathlib import Path
 import random
 
+from pygame import Vector2 as V2
 import pygame
 
-from pygame import Vector2 as V2
 
 
 
@@ -14,6 +15,7 @@ FPS = 30
 DELAY = int(1000 / FPS)
 TAMANHO = 50
 
+CAMINHO_IMAGENS = Path("media")
 
 class ExcecaoDoJogo(BaseException):
     pass
@@ -27,14 +29,17 @@ class PassouDeFase(ExcecaoDoJogo):
 class JogadorSaiu(ExcecaoDoJogo):
     pass
 
-
+IMAGENS = {}
 
 class Objeto:
     tamanho = V2(50, 50)
 
     imagem = None
+    arq_imagem = "nao existe"
+    redutor = 1
 
     def __init__(self, jogo, pos=None, vel=None):
+        self.carrega_imagem()
         self.jogo = jogo
         if pos is None:
             pos = V2(0, 0)
@@ -43,6 +48,21 @@ class Objeto:
         self.pos = pos
         self.vel = vel
         self.limite_direito = LARGURA - self.tamanho.x
+
+    def carrega_imagem(self):
+        cls = type(self)
+        if not cls in IMAGENS:
+            # le imagem do disco!
+            caminho = CAMINHO_IMAGENS / self.arq_imagem
+            if caminho.exists():
+                imagem = pygame.image.load(str(caminho))
+                IMAGENS[cls] = pygame.transform.scale(
+                    imagem,
+                    (int(self.tamanho.x), int(self.tamanho.y))
+                )
+
+        self.imagem = IMAGENS.get(cls, None)
+
 
     x = property((lambda self: self.pos.x), (lambda self, valor: setattr(self.pos, "x", valor)))
     y = property((lambda self: self.pos.y), (lambda self, valor: setattr(self.pos, "y", valor)))
@@ -54,7 +74,8 @@ class Objeto:
         return pygame.Rect(self.x, self.y, self.tamanho.x, self.tamanho.y)
 
     def atualiza(self):
-        self.pos += self.vel
+        if self.jogo.tick % self.redutor == 0:
+            self.pos += self.vel
 
         if self.x <= 0:
             self.x = 0
@@ -67,18 +88,28 @@ class Objeto:
             self.y = ALTURA - TAMANHO
 
     def desenha(self):
-        pygame.draw.rect(self.jogo.tela, self.cor, self.get_rect())
+        if self.imagem:
+            imagem = self.imagem.copy()
+            imagem.fill(self.cor, special_flags=pygame.BLEND_ADD)
+            self.jogo.tela.blit(imagem, self.get_rect())
+        else:
+            pygame.draw.rect(self.jogo.tela, self.cor, self.get_rect())
 
 class Jogador(Objeto):
     vel_max = PASSO
     aceleracao = 2
     cores = [(255, 0, 0), (255, 255, 0), (255, 128, 0), (192, 128,0), (0, 255,0)]
 
+    arq_imagem = "ship_h.png"
+    max_energia = 100
+
+
     def __init__(self, jogo):
         super().__init__(jogo, pos=V2(0, ALTURA // 2))
 
         self.acel = V2(0,0)
         self.indice = 0
+        self.energia = self.max_energia
 
     def atualiza(self, events):
 
@@ -119,6 +150,14 @@ class Jogador(Objeto):
         self.cor = self.cores[self.indice]
         self.indice = (self.indice + 1) % len(self.cores)
 
+        rect = self.get_rect()
+        if rect.collidelist(self.jogo.chao) != -1:
+            self.cor = (255, 0, 0)
+            self.energia -= 1
+
+        if self.energia == 0:
+            raise JogadorMorreu()
+
 
 class Tiro(Objeto):
     vel_inicial = V2(1.5 * PASSO, 0)
@@ -153,8 +192,11 @@ class Tiro(Objeto):
 
 
 class Inimigo(Objeto):
-    def __init__(self, jogo, numero):
-        pos = V2(LARGURA - TAMANHO,  ALTURA // 2 + numero * TAMANHO * 2)
+
+    arq_imagem = "invader01_00.png"
+    redutor = 4
+
+    def __init__(self, jogo, pos):
         super().__init__(jogo, pos)
         self.cor = (192, 0, 192)
         self.cont = 0
@@ -176,6 +218,8 @@ class Inimigo(Objeto):
             raise JogadorMorreu()
 
         super().atualiza()
+        if self.x == 0:
+            self.remove()
 
     def acertado(self, objeto):
         self.remove()
@@ -183,6 +227,35 @@ class Inimigo(Objeto):
     def remove(self):
         self.jogo.inimigos.remove(self)
 
+
+class Fase:
+    comprimento = LARGURA * 10
+    velocidade = 10
+    max_inimigos = 6
+    def __init__(self, jogo):
+        self.jogo = jogo
+        self.cor = (255, 255, 255)
+        self.pos = 0
+        desnivel_max = 2 * TAMANHO
+        self.data = []
+        ultima_altura = 0
+        altura_maxima = ALTURA * 0.75
+        for x in range(0, self.comprimento, TAMANHO):
+            altura = ultima_altura + random.randrange(
+                -desnivel_max, desnivel_max + TAMANHO, TAMANHO)
+            if altura < 0:
+                altura = 0
+            if altura >= altura_maxima:
+                altura = altura_maxima
+            self.data.append(altura)
+            ultima_altura = altura
+
+    def add_inimigos(self):
+        if len(self.jogo.inimigos) >= self.max_inimigos:
+            return
+        if random.random() < 1 / 15:
+            inimigo = Inimigo(self.jogo, pos=V2(LARGURA, random.randrange(0, ALTURA, TAMANHO)))
+            self.jogo.inimigos.append(inimigo)
 
 class Jogo:
 
@@ -196,12 +269,12 @@ class Jogo:
         self.jogador = Jogador(self)
         self.inimigos = []
 
-        for i in range(4):
-            self.inimigos.append(Inimigo(self, i))
-
         self.tiros = []
+        self.chao = []
 
         executando = True
+        self.tick = 0
+        self.fase = Fase(self)
         while executando:
 
             eventos = pygame.event.get()
@@ -214,6 +287,7 @@ class Jogo:
                 inimigo.atualiza()
             for tiro in self.tiros:
                 tiro.atualiza()
+            self.fase.add_inimigos()
 
             self.desenha_fundo()
 
@@ -226,9 +300,29 @@ class Jogo:
 
             pygame.display.flip()
             pygame.time.delay(DELAY)
+            self.tick += 1
 
     def desenha_fundo(self):
         self.tela.fill((0, 0, 0))
+        blocos_por_tela = LARGURA // TAMANHO
+        pos_x = self.tick // self.fase.velocidade
+        self.chao = []
+        for x in range(pos_x, blocos_por_tela + pos_x):
+            altura_bloco = self.fase.data[x]
+            esquerda_bloco = (x - pos_x) * TAMANHO
+
+            bloco_de_chao = pygame.Rect(
+                esquerda_bloco,
+                ALTURA - altura_bloco,
+                TAMANHO, altura_bloco
+            )
+            self.chao.append(bloco_de_chao)
+            pygame.draw.rect(
+                self.tela,
+                self.fase.cor,
+                bloco_de_chao
+            )
+
 
 
 jogo = Jogo()
